@@ -27,6 +27,23 @@ function connect() {
     };
 }
 
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+function formatTime(date) {
+    return pad2(date.getHours()) + ':' + pad2(date.getMinutes()) + ':' + pad2(date.getSeconds());
+}
+
+function formatDateTime(date) {
+    return pad2(date.getDate()) + '.' + pad2(date.getMonth() + 1) + '.' + date.getFullYear() +
+        ' ' + formatTime(date);
+}
+
+function updateClock() {
+    document.getElementById('clock').textContent = formatDateTime(new Date());
+}
+setInterval(updateClock, 1000);
+updateClock();
+
 function updateDashboard(d) {
     // ESP status
     var espSt = document.getElementById('esp-status');
@@ -46,6 +63,12 @@ function updateDashboard(d) {
     } else {
         st.textContent = 'Inverter Offline';
         st.className = 'status offline';
+    }
+
+    // Last data timestamp
+    if (d.timestamp) {
+        document.getElementById('last-update').textContent =
+            'Last data: ' + formatDateTime(new Date(d.timestamp));
     }
 
     if (!d.esp_connected) return;

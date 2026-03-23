@@ -79,6 +79,7 @@ Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
             try {
                 latestData = JSON.parse(event.data);
                 latestData.esp_connected = true;
+                latestData.timestamp = Date.now();
 
                 // Add to history
                 checkDayReset();
