@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solis Monitor (Remote)</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header>
+        <h1>Solis Monitor</h1>
+        <div class="header-right">
+            <span id="esp-status" class="status offline">ESP Offline</span>
+            <span id="status" class="status offline">Inverter Offline</span>
+        </div>
+    </header>
+
+    <div class="grid">
+        <!-- Solar PV -->
+        <div class="card solar">
+            <h2>Solar Panels</h2>
+            <div class="total-power">
+                <span id="pv-total" class="big-value">0</span>
+                <span class="unit">W</span>
+            </div>
+            <div class="pv-strings">
+                <div class="pv-string">
+                    <h3>PV1</h3>
+                    <div class="row"><span class="label">Voltage:</span><span id="pv1-v">0</span> V</div>
+                    <div class="row"><span class="label">Current:</span><span id="pv1-a">0</span> A</div>
+                    <div class="row"><span class="label">Power:</span><span id="pv1-w">0</span> W</div>
+                </div>
+                <div class="pv-string">
+                    <h3>PV2</h3>
+                    <div class="row"><span class="label">Voltage:</span><span id="pv2-v">0</span> V</div>
+                    <div class="row"><span class="label">Current:</span><span id="pv2-a">0</span> A</div>
+                    <div class="row"><span class="label">Power:</span><span id="pv2-w">0</span> W</div>
+                </div>
+            </div>
+            <div class="row"><span class="label">Today:</span><span id="today-kwh">0</span> kWh</div>
+            <div class="row"><span class="label">Total:</span><span id="total-kwh">0</span> kWh</div>
+        </div>
+
+        <!-- Battery -->
+        <div class="card battery">
+            <h2>Battery</h2>
+            <div class="soc-container">
+                <div class="soc-bar">
+                    <div id="soc-fill" class="soc-fill" style="width: 0%"></div>
+                </div>
+                <span id="bat-soc" class="big-value">0</span><span class="unit">%</span>
+            </div>
+            <div id="bat-status" class="bat-status">--</div>
+            <div class="row"><span class="label">Power:</span><span id="bat-w">0</span> W</div>
+            <div class="row"><span class="label">Voltage:</span><span id="bat-v">0</span> V</div>
+            <div class="row"><span class="label">Current:</span><span id="bat-a">0</span> A</div>
+            <div class="row"><span class="label">Temp:</span><span id="bat-t">0</span> &deg;C</div>
+            <div class="row"><span class="label">SOH:</span><span id="bat-soh">0</span> %</div>
+        </div>
+
+        <!-- Grid -->
+        <div class="card grid-card">
+            <h2>Grid</h2>
+            <div class="total-power">
+                <span id="grid-w" class="big-value">0</span>
+                <span class="unit">W</span>
+            </div>
+            <div id="grid-status" class="grid-dir">--</div>
+            <div class="row"><span class="label">Voltage:</span><span id="grid-v">0</span> V</div>
+            <div class="row"><span class="label">Current:</span><span id="grid-a">0</span> A</div>
+            <div class="row"><span class="label">Frequency:</span><span id="grid-hz">0</span> Hz</div>
+        </div>
+
+        <!-- Load -->
+        <div class="card load">
+            <h2>House Load</h2>
+            <div class="total-power">
+                <span id="load-w" class="big-value">0</span>
+                <span class="unit">W</span>
+            </div>
+            <div class="row"><span class="label">Backup load:</span><span id="backup-w">0</span> W</div>
+            <div class="row"><span class="label">Inverter temp:</span><span id="inv-t">0</span> &deg;C</div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

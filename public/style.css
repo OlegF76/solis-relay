@@ -1,0 +1,113 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 12px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+header h1 { font-size: 1.2em; color: #fff; }
+
+.header-right { display: flex; align-items: center; gap: 8px; }
+
+.status {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.status.online { background: #00c853; color: #000; }
+.status.offline { background: #ff5252; color: #fff; }
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.card {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 4px solid #555;
+}
+
+.card h2 {
+    font-size: 1em;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+}
+
+.card.solar { border-left-color: #ffc107; }
+.card.solar h2 { color: #ffc107; }
+.card.battery { border-left-color: #2196f3; }
+.card.battery h2 { color: #2196f3; }
+.card.grid-card { border-left-color: #f44336; }
+.card.grid-card h2 { color: #f44336; }
+.card.load { border-left-color: #4caf50; }
+.card.load h2 { color: #4caf50; }
+
+.total-power { text-align: center; margin: 8px 0; }
+.big-value { font-size: 2.2em; font-weight: 700; color: #fff; }
+.unit { font-size: 1em; opacity: 0.6; margin-left: 4px; }
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.9em;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.label { opacity: 0.6; }
+
+.pv-strings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 8px 0;
+}
+.pv-string {
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    padding: 8px;
+}
+.pv-string h3 { font-size: 0.85em; opacity: 0.7; margin-bottom: 4px; }
+
+.soc-container { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.soc-bar {
+    flex: 1; height: 20px;
+    background: #0a0a1a;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.soc-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f44336, #ffc107, #4caf50);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.bat-status, .grid-dir {
+    text-align: center;
+    font-size: 0.9em;
+    font-weight: 600;
+    margin: 4px 0 8px;
+}
+.charging { color: #4caf50; }
+.discharging { color: #ff9800; }
+.importing { color: #f44336; }
+.exporting { color: #4caf50; }
