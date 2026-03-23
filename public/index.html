@@ -10,12 +10,27 @@
     <header>
         <h1>Solis Monitor</h1>
         <div class="header-right">
+            <button id="btn-view" class="btn-view" onclick="toggleView()">Chart</button>
             <span id="esp-status" class="status offline">ESP Offline</span>
             <span id="status" class="status offline">Inverter Offline</span>
         </div>
     </header>
 
-    <div class="grid">
+    <!-- Chart view -->
+    <div id="chart-view" class="chart-view" style="display:none">
+        <div class="chart-container">
+            <canvas id="chart-canvas"></canvas>
+        </div>
+        <div class="chart-legend">
+            <span class="legend-item" style="color:#ffc107">-- PV Power</span>
+            <span class="legend-item" style="color:#2196f3">-- Battery</span>
+            <span class="legend-item" style="color:#f44336">-- Grid</span>
+            <span class="legend-item" style="color:#4caf50">-- Load</span>
+            <span class="legend-item" style="color:#9c27b0">-- SOC %</span>
+        </div>
+    </div>
+
+    <div id="data-view" class="grid">
         <!-- Solar PV -->
         <div class="card solar">
             <h2>Solar Panels</h2>
@@ -81,7 +96,7 @@
             <div class="row"><span class="label">Backup load:</span><span id="backup-w">0</span> W</div>
             <div class="row"><span class="label">Inverter temp:</span><span id="inv-t">0</span> &deg;C</div>
         </div>
-    </div>
+    </div><!-- close data-view -->
 
     <script src="/app.js"></script>
 </body>

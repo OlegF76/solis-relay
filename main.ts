@@ -6,6 +6,43 @@ let espConnected = false;
 let espSocket: WebSocket | null = null;
 const browsers = new Set<WebSocket>();
 
+// History: store peak data per minute from ESP32
+// Each entry: [minute, pv, bat, soc, grid, load]
+const history: number[][] = [];
+const MAX_HISTORY = 1440; // 24h
+let historyMinute = 0;
+let lastHistoryTime = 0;
+
+function addToHistory(d: any) {
+    const now = Date.now();
+    // Record once per minute
+    if (now - lastHistoryTime < 58000) return;
+    lastHistoryTime = now;
+
+    const point = [
+        historyMinute++,
+        (d.pv1_w || 0) + (d.pv2_w || 0),
+        d.bat_w || 0,
+        d.bat_soc || 0,
+        d.grid_w || 0,
+        d.load_w || 0,
+    ];
+    history.push(point);
+    if (history.length > MAX_HISTORY) history.shift();
+}
+
+// Reset history at midnight (approximate)
+let lastDay = new Date().getDate();
+function checkDayReset() {
+    const today = new Date().getDate();
+    if (today !== lastDay) {
+        history.length = 0;
+        historyMinute = 0;
+        lastDay = today;
+        console.log("History reset for new day");
+    }
+}
+
 // Read static files from public/
 const staticFiles: Record<string, { content: string; type: string }> = {};
 
@@ -42,6 +79,10 @@ Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
             try {
                 latestData = JSON.parse(event.data);
                 latestData.esp_connected = true;
+
+                // Add to history
+                checkDayReset();
+                addToHistory(latestData);
 
                 const relay = JSON.stringify(latestData);
                 for (const browser of browsers) {
@@ -89,7 +130,7 @@ Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
         return response;
     }
 
-    // REST fallback
+    // REST: latest data
     if (url.pathname === "/api/data") {
         return new Response(
             JSON.stringify(latestData || { online: false, esp_connected: false }),
@@ -97,9 +138,18 @@ Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
         );
     }
 
+    // REST: history for charts
+    if (url.pathname === "/api/history") {
+        return new Response(
+            JSON.stringify(history),
+            { headers: { "content-type": "application/json" } },
+        );
+    }
+
+    // Health check
     if (url.pathname === "/health") {
         return new Response(
-            JSON.stringify({ ok: true, esp: espConnected }),
+            JSON.stringify({ ok: true, esp: espConnected, history_points: history.length }),
             { headers: { "content-type": "application/json" } },
         );
     }
