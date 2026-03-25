@@ -1,12 +1,26 @@
 // Solis Relay Server for Deno Deploy
-// ESP32 connects to /esp (WebSocket), browsers connect to /ws
+// ESP32 sends data via HTTP POST /esp (every 10 sec)
+// Browsers connect via WebSocket /ws for real-time updates
 
 let latestData: any = null;
 let espConnected = false;
-let espSocket: WebSocket | null = null;
+let lastEspTime = 0;
 const browsers = new Set<WebSocket>();
 
-// History: store peak data per minute from ESP32
+// Mark ESP as disconnected if no data for 30 seconds
+function checkEspTimeout() {
+    if (espConnected && Date.now() - lastEspTime > 30000) {
+        espConnected = false;
+        latestData = null;
+        const msg = JSON.stringify({ esp_connected: false, online: false });
+        for (const browser of browsers) {
+            if (browser.readyState === WebSocket.OPEN) browser.send(msg);
+        }
+        console.log("ESP32 timeout - marked offline");
+    }
+}
+
+// History: store peak data per minute
 // Each entry: [minute, pv, bat, soc, grid, load]
 const history: number[][] = [];
 const MAX_HISTORY = 1440; // 24h
@@ -15,7 +29,6 @@ let lastHistoryTime = 0;
 
 function addToHistory(d: any) {
     const now = Date.now();
-    // Record once per minute
     if (now - lastHistoryTime < 58000) return;
     lastHistoryTime = now;
 
@@ -31,7 +44,7 @@ function addToHistory(d: any) {
     if (history.length > MAX_HISTORY) history.shift();
 }
 
-// Reset history at midnight (approximate)
+// Reset history at midnight
 let lastDay = new Date().getDate();
 function checkDayReset() {
     const today = new Date().getDate();
@@ -40,6 +53,15 @@ function checkDayReset() {
         historyMinute = 0;
         lastDay = today;
         console.log("History reset for new day");
+    }
+}
+
+// Broadcast to all connected browsers
+function broadcast(data: string) {
+    for (const browser of browsers) {
+        if (browser.readyState === WebSocket.OPEN) {
+            browser.send(data);
+        }
     }
 }
 
@@ -62,61 +84,41 @@ await loadStatic("style.css", "text/css");
 await loadStatic("app.js", "application/javascript");
 staticFiles["/"] = staticFiles["/index.html"];
 
-Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
+Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, async (req) => {
     const url = new URL(req.url);
 
-    // WebSocket upgrade for ESP32
-    if (url.pathname === "/esp") {
-        const { socket, response } = Deno.upgradeWebSocket(req);
+    // ESP32 sends data via HTTP POST
+    if (url.pathname === "/esp" && req.method === "POST") {
+        try {
+            const body = await req.text();
+            latestData = JSON.parse(body);
+            latestData.esp_connected = true;
+            latestData.timestamp = Date.now();
 
-        socket.onopen = () => {
             espConnected = true;
-            espSocket = socket;
-            console.log("ESP32 connected");
-        };
+            lastEspTime = Date.now();
 
-        socket.onmessage = (event) => {
-            try {
-                latestData = JSON.parse(event.data);
-                latestData.esp_connected = true;
-                latestData.timestamp = Date.now();
+            checkDayReset();
+            addToHistory(latestData);
 
-                // Add to history
-                checkDayReset();
-                addToHistory(latestData);
+            broadcast(JSON.stringify(latestData));
 
-                const relay = JSON.stringify(latestData);
-                for (const browser of browsers) {
-                    if (browser.readyState === WebSocket.OPEN) {
-                        browser.send(relay);
-                    }
-                }
-            } catch (e) {
-                console.error("Bad ESP data:", e);
-            }
-        };
-
-        socket.onclose = () => {
-            espConnected = false;
-            espSocket = null;
-            console.log("ESP32 disconnected");
-            const msg = JSON.stringify({ esp_connected: false, online: false });
-            for (const browser of browsers) {
-                if (browser.readyState === WebSocket.OPEN) browser.send(msg);
-            }
-        };
-
-        return response;
+            return new Response("ok", { status: 200 });
+        } catch (e) {
+            console.error("Bad ESP data:", e);
+            return new Response("bad data", { status: 400 });
+        }
     }
 
-    // WebSocket upgrade for browsers
+    // WebSocket for browsers
     if (url.pathname === "/ws") {
         const { socket, response } = Deno.upgradeWebSocket(req);
 
         socket.onopen = () => {
             browsers.add(socket);
+            checkEspTimeout();
             console.log("Browser connected, total:", browsers.size);
-            if (latestData) {
+            if (latestData && espConnected) {
                 socket.send(JSON.stringify(latestData));
             } else {
                 socket.send(JSON.stringify({ esp_connected: false, online: false }));
@@ -133,6 +135,7 @@ Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
 
     // REST: latest data
     if (url.pathname === "/api/data") {
+        checkEspTimeout();
         return new Response(
             JSON.stringify(latestData || { online: false, esp_connected: false }),
             { headers: { "content-type": "application/json" } },
@@ -150,7 +153,7 @@ Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
     // Health check
     if (url.pathname === "/health") {
         return new Response(
-            JSON.stringify({ ok: true, esp: espConnected, history_points: history.length }),
+            JSON.stringify({ ok: true, esp: espConnected, browsers: browsers.size, history_points: history.length }),
             { headers: { "content-type": "application/json" } },
         );
     }
@@ -163,7 +166,6 @@ Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
         });
     }
 
-    // 404
     return new Response("Not found", { status: 404 });
 });
 
