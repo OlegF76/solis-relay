@@ -84,30 +84,31 @@ await loadStatic("style.css", "text/css");
 await loadStatic("app.js", "application/javascript");
 staticFiles["/"] = staticFiles["/index.html"];
 
-Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, async (req) => {
+Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, (req) => {
     const url = new URL(req.url);
 
     // ESP32 sends data via HTTP POST
     if (url.pathname === "/esp" && req.method === "POST") {
-        try {
-            const body = await req.text();
-            latestData = JSON.parse(body);
-            latestData.esp_connected = true;
-            latestData.timestamp = Date.now();
+        return req.text().then((body) => {
+            try {
+                latestData = JSON.parse(body);
+                latestData.esp_connected = true;
+                latestData.timestamp = Date.now();
 
-            espConnected = true;
-            lastEspTime = Date.now();
+                espConnected = true;
+                lastEspTime = Date.now();
 
-            checkDayReset();
-            addToHistory(latestData);
+                checkDayReset();
+                addToHistory(latestData);
 
-            broadcast(JSON.stringify(latestData));
+                broadcast(JSON.stringify(latestData));
 
-            return new Response("ok", { status: 200 });
-        } catch (e) {
-            console.error("Bad ESP data:", e);
-            return new Response("bad data", { status: 400 });
-        }
+                return new Response("ok", { status: 200 });
+            } catch (e) {
+                console.error("Bad ESP data:", e);
+                return new Response("bad data", { status: 400 });
+            }
+        });
     }
 
     // WebSocket for browsers
